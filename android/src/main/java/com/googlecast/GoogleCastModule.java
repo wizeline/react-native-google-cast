@@ -110,15 +110,15 @@ public class GoogleCastModule
                     return;
                 }
 
-                Integer seconds = null;
-                if (params.hasKey("seconds")) {
-                    seconds = params.getInt("seconds");
+                Integer position = null;
+                if (params.hasKey("position")) {
+                    position = params.getInt("position");
                 }
-                if (seconds == null) {
-                    seconds = 0;
+                if (position == null) {
+                    position = 0;
                 }
 
-                remoteMediaClient.load(buildMediaInfo(params), true, seconds * 1000);
+                remoteMediaClient.load(buildMediaInfo(params), true, position);
 
                 Log.e(REACT_CLASS, "Casting media... ");
             }
@@ -144,9 +144,14 @@ public class GoogleCastModule
             movieMetadata.addImage(new WebImage(Uri.parse(params.getString("posterUrl"))));
         }
 
+        String contentType = "video/mp4";
+        if (params.hasKey("contentType") && params.getString("contentType") != null) {
+          contentType = params.getString("contentType");
+        }
+
         MediaInfo.Builder builder = new MediaInfo.Builder(params.getString("mediaUrl"))
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-                .setContentType("videos/mp4")
+                .setContentType(contentType)
                 .setMetadata(movieMetadata);
 
         if (params.hasKey("duration")) {
