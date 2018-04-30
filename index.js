@@ -12,9 +12,11 @@ export { CastButton }
 
 type CastState = 'NoDevicesAvailable' | 'NotConnected' | 'Connecting' | 'Connected';
 
+export const states = ['NoDevicesAvailable', 'NotConnected', 'Connecting', 'Connected'];
+
 export default {
   getCastState(): Promise<CastState> {
-    return GoogleCast.getCastState().then(state => ['NoDevicesAvailable', 'NotConnected', 'Connecting', 'Connected'][state])
+    return GoogleCast.getCastState()
   },
   castMedia(params: {
     mediaUrl: string,
@@ -86,6 +88,8 @@ export default {
   SESSION_ENDING: GoogleCast.SESSION_ENDING,
   SESSION_ENDED: GoogleCast.SESSION_ENDED,
 
+  STATE_CHANGED: GoogleCast.STATE_CHANGED,
+
   MEDIA_STATUS_UPDATED: GoogleCast.MEDIA_STATUS_UPDATED,
   MEDIA_PLAYBACK_STARTED: GoogleCast.MEDIA_PLAYBACK_STARTED,
   MEDIA_PLAYBACK_ENDED: GoogleCast.MEDIA_PLAYBACK_ENDED,
@@ -93,4 +97,9 @@ export default {
   CHANNEL_CONNECTED: GoogleCast.CHANNEL_CONNECTED,
   CHANNEL_DISCONNECTED: GoogleCast.CHANNEL_DISCONNECTED,
   CHANNEL_MESSAGE_RECEIVED: GoogleCast.CHANNEL_MESSAGE_RECEIVED,
+
+  STATE_NO_DEVICES_AVAILABLE: 1,
+  STATE_NOT_CONNECTED: 2,
+  STATE_CONNECTING: 3,
+  STATE_CONNECTED: 4,
 }

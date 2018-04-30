@@ -13,6 +13,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.common.annotations.VisibleForTesting;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.google.android.gms.cast.MediaInfo;
@@ -20,6 +21,7 @@ import com.google.android.gms.cast.MediaMetadata;
 import com.google.android.gms.cast.framework.CastContext;
 import com.google.android.gms.cast.framework.CastSession;
 import com.google.android.gms.cast.framework.CastState;
+import com.google.android.gms.cast.framework.CastStateListener;
 import com.google.android.gms.cast.framework.SessionManager;
 import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
@@ -44,11 +46,14 @@ public class GoogleCastModule
     protected static final String SESSION_ENDING = "GoogleCast:SessionEnding";
     protected static final String SESSION_ENDED = "GoogleCast:SessionEnded";
 
+    protected static final String STATE_CHANGED = "GoogleCast:StateChanged";
+
     protected static final String MEDIA_STATUS_UPDATED = "GoogleCast:MediaStatusUpdated";
     protected static final String MEDIA_PLAYBACK_STARTED= "GoogleCast:MediaPlaybackStarted";
     protected static final String MEDIA_PLAYBACK_ENDED = "GoogleCast:MediaPlaybackEnded";
 
     private CastSession mCastSession;
+    private CastStateListener mCastStateListener;
     private SessionManagerListener<CastSession> mSessionManagerListener;
 
     public GoogleCastModule(ReactApplicationContext reactContext) {
@@ -74,6 +79,8 @@ public class GoogleCastModule
         constants.put("SESSION_RESUMED", SESSION_RESUMED);
         constants.put("SESSION_ENDING", SESSION_ENDING);
         constants.put("SESSION_ENDED", SESSION_ENDED);
+
+        constants.put("STATE_CHANGED", STATE_CHANGED);
 
         constants.put("MEDIA_STATUS_UPDATED", MEDIA_STATUS_UPDATED);
         constants.put("MEDIA_PLAYBACK_STARTED", MEDIA_PLAYBACK_STARTED);
@@ -155,7 +162,7 @@ public class GoogleCastModule
             @Override
             public void run() {
                 CastContext castContext = CastContext.getSharedInstance(getReactApplicationContext());
-                promise.resolve(castContext.getCastState() - 1);
+                promise.resolve(castContext.getCastState());
             }
         });
     }
@@ -230,6 +237,15 @@ public class GoogleCastModule
 
     private void setupCastListener() {
         mSessionManagerListener = new GoogleCastSessionManagerListener(this);
+
+        mCastStateListener = new CastStateListener() {
+            @Override
+            public void onCastStateChanged(int newState) {
+              WritableMap event = Arguments.createMap();
+              event.putInt("state", newState);
+              emitMessageToRN(GoogleCastModule.STATE_CHANGED, event);
+            }
+        };
     }
 
     @Override
@@ -237,7 +253,10 @@ public class GoogleCastModule
         getReactApplicationContext().runOnUiQueueThread(new Runnable() {
             @Override
             public void run() {
-                SessionManager sessionManager = CastContext.getSharedInstance(getReactApplicationContext()).getSessionManager();
+                CastContext castContext = CastContext.getSharedInstance(getReactApplicationContext());
+                castContext.addCastStateListener(mCastStateListener);
+
+                SessionManager sessionManager = castContext.getSessionManager();
                 sessionManager.addSessionManagerListener(mSessionManagerListener, CastSession.class);
             }
         });
@@ -248,7 +267,10 @@ public class GoogleCastModule
         getReactApplicationContext().runOnUiQueueThread(new Runnable() {
             @Override
             public void run() {
-                SessionManager sessionManager = CastContext.getSharedInstance(getReactApplicationContext()).getSessionManager();
+                CastContext castContext = CastContext.getSharedInstance(getReactApplicationContext());
+                castContext.removeCastStateListener(mCastStateListener);
+
+                SessionManager sessionManager = castContext.getSessionManager();
                 sessionManager.removeSessionManagerListener(
                         mSessionManagerListener, CastSession.class);
             }
