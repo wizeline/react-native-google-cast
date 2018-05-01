@@ -27,6 +27,9 @@ import com.google.android.gms.cast.framework.SessionManagerListener;
 import com.google.android.gms.cast.framework.media.RemoteMediaClient;
 import com.google.android.gms.common.images.WebImage;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -136,23 +139,31 @@ public class GoogleCastModule
             movieMetadata.putString(MediaMetadata.KEY_SUBTITLE, params.getString("subtitle"));
         }
 
-        if (params.hasKey("imageUrl") && params.getString("imageUrl") != null) {
-            movieMetadata.addImage(new WebImage(Uri.parse(params.getString("imageUrl"))));
-        }
-
         if (params.hasKey("posterUrl") && params.getString("posterUrl") != null) {
             movieMetadata.addImage(new WebImage(Uri.parse(params.getString("posterUrl"))));
         }
 
         String contentType = "video/mp4";
         if (params.hasKey("contentType") && params.getString("contentType") != null) {
-          contentType = params.getString("contentType");
+            contentType = params.getString("contentType");
         }
 
         MediaInfo.Builder builder = new MediaInfo.Builder(params.getString("mediaUrl"))
                 .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
                 .setContentType(contentType)
                 .setMetadata(movieMetadata);
+
+        if (params.hasKey("customData")) {
+            ReadableMap customData = params.getMap("customData");
+            JSONObject json = null;
+            try{
+              json = new JSONObject(customData.toHashMap());
+            }catch (Exception e){
+              Log.e(null,"Unable to convert custom data to json, must be strings only", e);
+            }
+
+            builder.setCustomData(json);
+        }
 
         if (params.hasKey("duration")) {
             builder = builder.setStreamDuration(params.getInt("duration"));
