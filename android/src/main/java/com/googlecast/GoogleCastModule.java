@@ -59,14 +59,10 @@ public class GoogleCastModule extends ReactContextBaseJavaModule implements Life
 
     private boolean mCastingSupported = true;
 
-    public GoogleCastModule(ReactApplicationContext reactContext) {
+    public GoogleCastModule(ReactApplicationContext reactContext, boolean castingSupported) {
         super(reactContext);
 
-        try {
-            CastContext.getSharedInstance(getReactApplicationContext());
-        } catch (Exception ex) {
-            mCastingSupported = false;
-        }
+        mCastingSupported = castingSupported;
 
         if (mCastingSupported) {
             reactContext.addLifecycleEventListener(this);
