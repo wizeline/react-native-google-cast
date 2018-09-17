@@ -79,6 +79,8 @@ export default {
       ? new NativeEventEmitter(GoogleCast)
       : DeviceEventEmitter,
 
+  CASTING_SUPPORTED: GoogleCast.CASTING_SUPPORTED,
+
   SESSION_STARTING: GoogleCast.SESSION_STARTING,
   SESSION_STARTED: GoogleCast.SESSION_STARTED,
   SESSION_START_FAILED: GoogleCast.SESSION_START_FAILED,
