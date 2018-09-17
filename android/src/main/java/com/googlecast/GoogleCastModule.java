@@ -33,16 +33,14 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GoogleCastModule
-        extends ReactContextBaseJavaModule implements LifecycleEventListener {
+public class GoogleCastModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
 
     @VisibleForTesting
     public static final String REACT_CLASS = "RNGoogleCast";
 
     protected static final String SESSION_STARTING = "GoogleCast:SessionStarting";
     protected static final String SESSION_STARTED = "GoogleCast:SessionStarted";
-    protected static final String SESSION_START_FAILED =
-            "GoogleCast:SessionStartFailed";
+    protected static final String SESSION_START_FAILED = "GoogleCast:SessionStartFailed";
     protected static final String SESSION_SUSPENDED = "GoogleCast:SessionSuspended";
     protected static final String SESSION_RESUMING = "GoogleCast:SessionResuming";
     protected static final String SESSION_RESUMED = "GoogleCast:SessionResumed";
@@ -52,17 +50,28 @@ public class GoogleCastModule
     protected static final String STATE_CHANGED = "GoogleCast:StateChanged";
 
     protected static final String MEDIA_STATUS_UPDATED = "GoogleCast:MediaStatusUpdated";
-    protected static final String MEDIA_PLAYBACK_STARTED= "GoogleCast:MediaPlaybackStarted";
+    protected static final String MEDIA_PLAYBACK_STARTED = "GoogleCast:MediaPlaybackStarted";
     protected static final String MEDIA_PLAYBACK_ENDED = "GoogleCast:MediaPlaybackEnded";
 
     private CastSession mCastSession;
     private CastStateListener mCastStateListener;
     private SessionManagerListener<CastSession> mSessionManagerListener;
 
+    private boolean mCastingSupported = true;
+
     public GoogleCastModule(ReactApplicationContext reactContext) {
         super(reactContext);
-        reactContext.addLifecycleEventListener(this);
-        setupCastListener();
+
+        try {
+            CastContext.getSharedInstance(getReactApplicationContext());
+        } catch (Exception ex) {
+            mCastingSupported = false;
+        }
+
+        if (mCastingSupported) {
+            reactContext.addLifecycleEventListener(this);
+            setupCastListener();
+        }
     }
 
     @Override
@@ -73,6 +82,8 @@ public class GoogleCastModule
     @Override
     public Map<String, Object> getConstants() {
         final Map<String, Object> constants = new HashMap<>();
+
+        constants.put("CASTING_SUPPORTED", mCastingSupported);
 
         constants.put("SESSION_STARTING", SESSION_STARTING);
         constants.put("SESSION_STARTED", SESSION_STARTED);
@@ -92,11 +103,9 @@ public class GoogleCastModule
         return constants;
     }
 
-    protected void emitMessageToRN(String eventName,
-                                 @Nullable WritableMap params) {
-        getReactApplicationContext()
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit(eventName, params);
+    protected void emitMessageToRN(String eventName, @Nullable WritableMap params) {
+        getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(eventName,
+                params);
     }
 
     @ReactMethod
@@ -149,17 +158,15 @@ public class GoogleCastModule
         }
 
         MediaInfo.Builder builder = new MediaInfo.Builder(params.getString("mediaUrl"))
-                .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
-                .setContentType(contentType)
-                .setMetadata(movieMetadata);
+                .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED).setContentType(contentType).setMetadata(movieMetadata);
 
         if (params.hasKey("customData")) {
             ReadableMap customData = params.getMap("customData");
             JSONObject json = null;
-            try{
-              json = new JSONObject(customData.toHashMap());
-            }catch (Exception e){
-              Log.e(null,"Unable to convert custom data to json, must be strings only", e);
+            try {
+                json = new JSONObject(customData.toHashMap());
+            } catch (Exception e) {
+                Log.e(null, "Unable to convert custom data to json, must be strings only", e);
             }
 
             builder.setCustomData(json);
@@ -177,8 +184,12 @@ public class GoogleCastModule
         getReactApplicationContext().runOnUiQueueThread(new Runnable() {
             @Override
             public void run() {
-                CastContext castContext = CastContext.getSharedInstance(getReactApplicationContext());
-                promise.resolve(castContext.getCastState());
+                if (!mCastingSupported) {
+                    promise.resolve(CastState.NOT_CONNECTED);
+                } else {
+                    CastContext castContext = CastContext.getSharedInstance(getReactApplicationContext());
+                    promise.resolve(castContext.getCastState());
+                }
             }
         });
     }
@@ -236,7 +247,8 @@ public class GoogleCastModule
         getReactApplicationContext().runOnUiQueueThread(new Runnable() {
             @Override
             public void run() {
-                SessionManager sessionManager = CastContext.getSharedInstance(getReactApplicationContext()).getSessionManager();
+                SessionManager sessionManager = CastContext.getSharedInstance(getReactApplicationContext())
+                        .getSessionManager();
                 sessionManager.endCurrentSession(stopCasting);
                 promise.resolve(true);
             }
@@ -257,9 +269,9 @@ public class GoogleCastModule
         mCastStateListener = new CastStateListener() {
             @Override
             public void onCastStateChanged(int newState) {
-              WritableMap event = Arguments.createMap();
-              event.putInt("state", newState);
-              emitMessageToRN(GoogleCastModule.STATE_CHANGED, event);
+                WritableMap event = Arguments.createMap();
+                event.putInt("state", newState);
+                emitMessageToRN(GoogleCastModule.STATE_CHANGED, event);
             }
         };
     }
@@ -287,8 +299,7 @@ public class GoogleCastModule
                 castContext.removeCastStateListener(mCastStateListener);
 
                 SessionManager sessionManager = castContext.getSessionManager();
-                sessionManager.removeSessionManagerListener(
-                        mSessionManagerListener, CastSession.class);
+                sessionManager.removeSessionManagerListener(mSessionManagerListener, CastSession.class);
             }
         });
     }
