@@ -53,8 +53,6 @@ public abstract class GoogleCastActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mDelegate.onCreate(savedInstanceState);
-        // lazy load Google Cast context
-        CastContext.getSharedInstance(this);
     }
 
     @Override
