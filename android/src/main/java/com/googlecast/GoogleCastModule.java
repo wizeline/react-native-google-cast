@@ -53,6 +53,8 @@ public class GoogleCastModule extends ReactContextBaseJavaModule implements Life
     protected static final String MEDIA_PLAYBACK_STARTED = "GoogleCast:MediaPlaybackStarted";
     protected static final String MEDIA_PLAYBACK_ENDED = "GoogleCast:MediaPlaybackEnded";
 
+    private static final String TAG = "GoogleCastModule";
+
     private CastSession mCastSession;
     private CastStateListener mCastStateListener;
     private SessionManagerListener<CastSession> mSessionManagerListener;
@@ -115,6 +117,7 @@ public class GoogleCastModule extends ReactContextBaseJavaModule implements Life
             public void run() {
                 RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
                 if (remoteMediaClient == null) {
+                    Log.e(TAG, "Failed to cast, no client");
                     return;
                 }
 
@@ -196,7 +199,13 @@ public class GoogleCastModule extends ReactContextBaseJavaModule implements Life
             getReactApplicationContext().runOnUiQueueThread(new Runnable() {
                 @Override
                 public void run() {
-                    mCastSession.getRemoteMediaClient().play();
+                    RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+                    if (remoteMediaClient == null) {
+                        Log.e(TAG, "Failed to play, no client");
+                        return;
+                    }
+
+                    remoteMediaClient.play();
                 }
             });
         }
@@ -208,7 +217,13 @@ public class GoogleCastModule extends ReactContextBaseJavaModule implements Life
             getReactApplicationContext().runOnUiQueueThread(new Runnable() {
                 @Override
                 public void run() {
-                    mCastSession.getRemoteMediaClient().pause();
+                    RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+                    if (remoteMediaClient == null) {
+                        Log.e(TAG, "Failed to pause, no client");
+                        return;
+                    }
+
+                    remoteMediaClient.pause();
                 }
             });
         }
@@ -220,7 +235,13 @@ public class GoogleCastModule extends ReactContextBaseJavaModule implements Life
             getReactApplicationContext().runOnUiQueueThread(new Runnable() {
                 @Override
                 public void run() {
-                    mCastSession.getRemoteMediaClient().stop();
+                    RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+                    if (remoteMediaClient == null) {
+                        Log.e(TAG, "Failed to stop, no client");
+                        return;
+                    }
+
+                    remoteMediaClient.stop();
                 }
             });
         }
@@ -232,7 +253,13 @@ public class GoogleCastModule extends ReactContextBaseJavaModule implements Life
             getReactApplicationContext().runOnUiQueueThread(new Runnable() {
                 @Override
                 public void run() {
-                    mCastSession.getRemoteMediaClient().seek(position * 1000);
+                    RemoteMediaClient remoteMediaClient = mCastSession.getRemoteMediaClient();
+                    if (remoteMediaClient == null) {
+                        Log.e(TAG, "Failed to seek, no client");
+                        return;
+                    }
+
+                    remoteMediaClient.seek(position * 1000);
                 }
             });
         }
